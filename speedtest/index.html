@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="renderer" content="webkit">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+		<link rel="shortcut icon" href="/favicon.ico">
+
+    <title>IST实验室服务器测速</title>
+    <style type="text/css">
+        html,
+        body {
+           /* margin: 0;
+            padding: 0;
+            border: none;
+            
+            background-color:#141526;
+            color: #FFF;
+			font-family: 微软雅黑;*/
+		position:relative;
+		overflow:hidden;
+		background-image: linear-gradient(180deg, #2af598 0%, #009efd 100%);
+		text-align: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-attachment: fixed;
+        }
+
+        div.test {
+            display: inline-block;
+            margin: 1em;
+            font-size: 2vw;
+            min-width: 10vw;
+            text-align: center;
+        }
+
+        div.testName,
+        div.meterUnit {
+            font-size: 0.6em;
+        }
+
+        div.meter {
+            font-size: 1em;
+            line-height: 2em;
+            height: 2em !important;
+        }
+
+        .flash {
+            animation: flash 0.6s linear infinite;
+        }
+
+        @keyframes flash {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        a {
+            display: inline-block;
+            /*border: 0.15em solid #FFF;*/
+            /*margin: 0.4em;*/
+            color: #FFF;
+            text-decoration: none;
+        }
+
+        #ip {
+            margin: 0.8em 0;
+            font-size: 1.2em;
+        }
+
+        @media all and (max-width: 50em) {
+            div.test {
+                font-size: 1.5em;
+            }
+        }
+      .lite-text{display:inline-block;background-color:#fff38e;color:#0b0c1b;border-radius:.2em;padding:.2em .2em .2em;margin-left:.4em;font-weight:700;line-height:1;font-size:15px;font-size:1.1rem;position:relative;top:-0.4em}
+    </style>
+    <script type="text/javascript">
+        var w = null
+        function runTest() {
+            document.getElementById('startBtn').style.display = 'none'
+            document.getElementById('testArea').style.display = ''
+            document.getElementById('abortBtn').style.display = ''
+            document.getElementById('ip').style.display = ''
+            document.getElementById('intro').innerHTML = "当前客户端IP"
+            w = new Worker('./speedtest_worker.min.js')
+            var interval = setInterval(function () { w.postMessage('status') }, 100)
+            w.onmessage = function (event) {
+                var data = event.data.split(';')
+                var status = Number(data[0])
+                var dl = document.getElementById('download')
+                var ul = document.getElementById('upload')
+                var ping = document.getElementById('ping')
+                var ip = document.getElementById('ip')
+                var jitter = document.getElementById('jitter')
+                dl.className = status === 1 ? 'flash' : ''
+                ping.className = status === 2 ? 'flash' : ''
+                jitter.className = ul.className = status === 3 ? 'flash' : ''
+                if (status === 4) {
+                    clearInterval(interval)
+                    document.getElementById('abortBtn').style.display = 'none'
+                    document.getElementById('startBtn').style.display = ''
+                    document.getElementById('startBtn').innerHTML = "重新测试"
+                    document.getElementById('intro').innerHTML = "当前客户端IP："
+                    w = null
+                }
+                if (status === 5) {
+                    clearInterval(interval)
+                    document.getElementById('testArea').style.display = 'none'
+                    document.getElementById('abortBtn').style.display = 'none'
+                    document.getElementById('startBtn').style.display = ''
+                    document.getElementById('startBtn').innerHTML = "开始测试"
+                    document.getElementById('intro').innerHTML = "客户端对服务器网络测试"
+                    document.getElementById('ip').style.display = 'none'
+                }
+                dl.textContent = data[1]
+                ul.textContent = data[2]
+                ping.textContent = data[3]
+                jitter.textContent = data[5]
+                ip.textContent = data[4]
+            }
+            w.postMessage('start')
+        }
+        function abortTest() {
+            if (w) w.postMessage('abort')
+        }
+    </script>
+    <style>
+    #h1 {
+    }
+    </style>
+</head>
+
+<body>
+
+    <br />
+    <img src="img/wifi.png">
+    <h1 id="h1">IST服务器测速工具<div class="lite-text">Lite</div></h1>
+  <div id="intro">客户端对服务器网络测试</div>
+  <div id="ip" style="display:none">连接失败</div><br />
+  
+      <div id="testArea" style="display:none">
+        
+        <div class="test">
+            <div class="testName">下载速度</div>
+            <div class="meter">&nbsp;<span id="download"></span>&nbsp;</div>
+            <div class="meterUnit">Mbps</div>
+        </div>
+        <div class="test">
+            <div class="testName">上传速度</div>
+            <div class="meter">&nbsp;<span id="upload"></span>&nbsp;</div>
+            <div class="meterUnit">Mbps</div>
+        </div>
+        <div class="test">
+            <div class="testName">平均延迟</div>
+            <div class="meter">&nbsp;<span id="ping"></span>&nbsp;</div>
+            <div class="meterUnit">ms</div>
+        </div>
+        <div class="test">
+            <div class="testName">延迟波动</div>
+            <div class="meter">&nbsp;<span id="jitter"></span>&nbsp;</div>
+            <div class="meterUnit">ms</div>
+        </div>
+        <br/>
+       </div>
+  
+  <div class="button_container">
+      <div class="button_su">
+        <span class="su_button_circle">
+        </span>
+        <a href="javascript:runTest()" class="button_su_inner"   id="startBtn">
+          <span class="button_text_container">
+            开始测试
+          </span>
+        </a>
+        
+         <a href="javascript:abortTest()" class="button_su_inner" style="display:none" id="abortBtn">
+          <span class="button_text_container">
+            取消测试
+          </span>
+        </a>
+      </div>
+  
+
+  
+  
+  
+  <!--<a href="javascript:runTest()" id="startBtn">开始测试</a>-->
+  <!--<a href="javascript:abortTest()" style="display:none" id="abortBtn">取消测试</a>-->
+
+       <div id="footStyle">
+		<div id="footDiv">
+			<li>
+				<span class="copyright">Copyright © ISTLAB 2018-2022 All Rights Reserved.</span>
+			</li>
+			</div>
+		</div>
+ <style>
+*{
+	list-style:none;
+	}
+.footer-link-separator {
+    background-color: #e6eaed;
+    background-color: rgba(230, 234, 237, .2);
+    display: inline-block;
+    width: 1px;
+    height: 10px;
+    vertical-align: baseline
+}
+
+#footStyle {
+    width: 100%;
+    height:50px;
+    position: fixed;
+    bottom: 0;
+    left:0;
+    color: #F8F8FF;
+    color: rgba(255, 255, 255, .8);
+    /*border:10px solid black;*/
+    font-size:13px;
+}
+
+#footDiv {
+    text-align: center!important;
+}
+
+#footDiv a,
+#footDiv a:active,
+#footDiv a:focus {
+    text-decoration: none;
+    color: #F8F8FF;
+    color: rgba(255, 255, 255, .8)
+}
+
+#footDiv a:hover {
+    color: #F8F8FF
+}
+
+
+
+
+
+
+
+
+
+
+.credit{
+  text-align: center;
+  color: rgba(255,255,255,0.4);
+
+}
+
+.content{
+  padding-top: 45px;
+  padding-bottom: 20px;
+}
+
+.button_container{
+    width: 176px;
+    margin: 0 auto;
+    margin-top: -30px;
+    padding-top: 40px;
+}
+
+.button_su{
+  overflow: hidden;
+  position: relative;
+  display: inline-block;
+  border-radius: 3px;
+  margin-bottom: 30px;
+}
+
+.su_button_circle{
+  background-color: red;
+  border-radius: 1000px;
+  position: absolute;
+  left:0;
+  top:0;
+  width: 0px;
+  height: 0px;
+  margin-left: 0px;
+  margin-top: 0px;
+  pointer-events: none;
+  /*animation-timing-function: ease-in-out; */
+}
+
+.button_su_inner{
+    display: inline-block;
+    background: #F8B627;
+    color: #F4F4F4;
+    font-size: 16px;
+    font-weight: normal;
+    width: 100px;
+    text-align: center;
+    border-radius: 3px;
+    transition: 400ms;
+    text-decoration: none;
+    padding: 12px;
+    z-index: 100000;
+}
+
+.button_text_container{
+   position:relative;
+   z-index: 10000;
+}
+
+.explode-circle {
+   animation: explode 0.5s forwards;
+
+}
+
+.desplode-circle{
+   animation: desplode 0.5s forwards;
+}
+
+@keyframes explode {
+  0% {
+    width: 0px;
+    height: 0px;
+    margin-left: 0px;
+    margin-top: 0px;
+    background-color: rgba(42, 53, 80,0.2);
+  }
+  100% {
+    width: 400px;
+    height: 400px;
+    margin-left: -200px;
+    margin-top: -200px;
+    background-color: rgba(20, 180, 87,0.8);
+  }
+}
+
+@keyframes desplode {
+  0% {
+    width: 400px;
+    height: 400px;
+    margin-left: -200px;
+    margin-top: -200px;
+    background-color: rgba(20, 180, 87,0.8);
+  }
+  100% {
+    width: 0px;
+    height: 0px;
+    margin-left: 0px;
+    margin-top: 0px;
+    background-color: rgba(129, 80, 108,0.6);
+  }
+}
+
+#abortBtn:hover {
+	background-color:rgb(74, 189, 39, 0.8);
+	}
+</style>	
+	  <script src="js/jquery-1.9.1.min.js"></script>	   
+    <script src="js/index.js"></script>
+
+<!--
+Localization and optimization by Jonvi
+Thanks:https://github.com/adolfintel/speedtest
+-->
+
+</body>
+
+</html>
